@@ -1,0 +1,49 @@
+flowchart TB
+    subgraph TRAIN["OFFLINE: data + training"]
+        direction TB
+        DATA[("data/single_note/<br/>train/ and val/<br/>PITCH/DURATION/*.png")]
+        GEN["generate_half_notes.py<br/>synthetic half notes"]
+        DATA --> GEN --> DATA
+        DATA --> LOAD["single_note_cnn.py<br/>load + preprocess + augment"]
+        LOAD --> NET["Compact CNN<br/>4x Conv/BN/Pool, Dense 256<br/>pitch head + duration head"]
+        NET --> EVAL["classification report<br/>+ confusion matrices"]
+        NET --> OUT[("runs/NAME/<br/>best.keras + labels.json")]
+    end
+
+    subgraph FE["RUNTIME: Frontend (React + Vite, :5173)"]
+        direction TB
+        U[FileUpload.tsx<br/>pick measure image] --> P[ImagePreview.tsx]
+        P --> C[ConversionActions.tsx<br/>Convert button]
+        RES[XML preview + Download<br/>measure.musicxml]
+    end
+
+    subgraph BE["RUNTIME: Backend omr_server.py (FastAPI, :8000)"]
+        direction TB
+        EP["POST /api/omr"] --> PRE["preprocess_bgr_to_tensor<br/>gray → light deskew → adaptive threshold<br/>→ crop → pad square → 64x64"]
+        PRE --> CNN["Keras CNN inference<br/>argmax → pitch e.g. G4"]
+        CNN --> XML["build_single_note_musicxml<br/>hardcoded whole note, 4/4, treble"]
+    end
+
+    subgraph EXP["Experiments, not wired in"]
+        direction TB
+        DS["Deskewing/*.py<br/>Hough / minAreaRect / projection"]
+        M21["Learning/UsingMusic21.py<br/>WholeNote.musicxml"]
+    end
+
+    subgraph GOAL["README goal, mostly TODO"]
+        direction LR
+        G1[Full-page deskew] --> G2[Staff line detection] --> G3[Segment symbols] --> G4[Classify pitch + duration] --> G5[Multi-measure MusicXML]
+    end
+
+    OUT -.->|"model + labels loaded at startup<br/>(format mismatch: server expects 'classes')"| CNN
+    C -->|"POST image"| EP
+    XML -->|"MusicXML text"| RES
+    RES -.-> MS[MuseScore / Finale]
+    LOAD -. "same preprocess, duplicated code" .- PRE
+    DS -.->|planned| G1
+    M21 -.->|reference| G5
+
+    classDef todo fill:#ffcdd2,stroke:#c62828,color:#000
+    classDef partial fill:#fff9c4,stroke:#f9a825,color:#000
+    class G1,G2,G3 todo
+    class G4,G5 partial

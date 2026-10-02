@@ -7,3 +7,27 @@ The project is built in Python and combines classical image processing with a Py
 Secundo includes a lightweight backend service and web interface that together provide an end-to-end pipeline from image upload to downloadable MusicXML output.
 
 Key technologies: Python, PyTorch, OpenCV, CNNs, FastAPI, MusicXML, Flask
+
+
+## Quick Start (one-click launch)
+
+Prerequisites: [Python 3.10+](https://www.python.org/downloads/) and [Node.js](https://nodejs.org/).
+
+- **Windows:** double-click `launch.bat`
+- **macOS/Linux:** double-click `launch.command` (first time only, run `chmod +x launch.command`)
+
+The first run creates a `.venv`, installs the Python and npm packages (TensorFlow is large, so this takes a few minutes), then starts both servers and opens the app in your browser. If port 8080 is already in use, Vite moves to the next free port and opens the browser there automatically. Later runs start in seconds.
+
+| Service | URL |
+|---|---|
+| Web app (Vite) | http://localhost:8080/Secundo-v-1.0/ |
+| OMR API (FastAPI) | http://127.0.0.1:8000/api/omr |
+
+To stop, close the "Secundo Backend" and "Secundo Frontend" windows (macOS: Ctrl+C in the terminal window).
+
+### Manual launch
+```bash
+pip install -r requirements.txt
+uvicorn omr_server:app --port 8000   # terminal 1
+npm install && npm run dev           # terminal 2
+```

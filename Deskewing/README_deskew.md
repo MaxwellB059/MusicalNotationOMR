@@ -35,3 +35,5 @@ Outputs:
   ```
 - Preserve DPI/scale metadata if you plan downstream measurements.
 - After deskew, you can proceed with staff line detection (Hough or morphological projection) and then symbol detection.
+
+> **Tip:** to launch the whole Secundo app (backend + frontend) in one step, double-click `launch.bat` (Windows) or `launch.command` (macOS) in the project root. See the main README.
