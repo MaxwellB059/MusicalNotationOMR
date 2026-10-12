@@ -1,0 +1,13 @@
+# Backend (omr_server.py)
+fastapi
+uvicorn
+python-multipart
+httpx2            # only needed to run tests with fastapi's TestClient
+numpy<2           # TensorFlow 2.15 is not compatible with NumPy 2
+opencv-python
+# The checked-in models in runs/ were saved with Keras 2.15. Newer TensorFlow
+# (Keras 3) cannot load them, so keep this pinned unless you retrain + re-save.
+tensorflow==2.15.*
+
+# Training only (single_note_cnn.py)
+scikit-learn

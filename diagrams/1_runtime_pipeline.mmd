@@ -1,0 +1,29 @@
+flowchart LR
+    subgraph FE["Frontend: React + Vite + Tailwind/shadcn (localhost:5173)"]
+        U[FileUpload.tsx<br/>user picks measure image] --> P[ImagePreview.tsx]
+        P --> C[ConversionActions.tsx<br/>'Convert to MusicXML' button]
+        C -->|"Index.tsx: fetch POST<br/>multipart file"| REQ(( ))
+        RES(( )) --> XP[XML preview + Download<br/>measure.musicxml]
+    end
+
+    subgraph BE["Backend: omr_server.py (FastAPI, 127.0.0.1:8000)"]
+        EP["POST /api/omr<br/>CORS allows :5173 / :8080"] --> DEC[cv2.imdecode<br/>400 if unreadable]
+        DEC --> PRE
+
+        subgraph PRE["preprocess_bgr_to_tensor"]
+            direction TB
+            g[Grayscale] --> sk["Light deskew via image moments<br/>only if 0.3° < angle < 10°"]
+            sk --> th[Adaptive threshold<br/>inverted binary]
+            th --> bb[Crop to ink bounding box]
+            bb --> sq[Pad to square]
+            sq --> rs["Resize to 64x64, scale to 0-1"]
+        end
+
+        PRE --> CNN["Keras CNN<br/>runs/seven_notes/best.keras"]
+        LBL[("labels.json<br/>A4 A5 B4 C6 D4 F4 G4")] -.-> CNN
+        CNN -->|"argmax of probs → pitch e.g. G4"| XML["build_single_note_musicxml<br/>hardcoded: whole note, 4/4,<br/>treble clef, C major"]
+    end
+
+    REQ --> EP
+    XML -->|"MusicXML text"| RES
+    XP -.->|open in| MS[MuseScore / Finale]

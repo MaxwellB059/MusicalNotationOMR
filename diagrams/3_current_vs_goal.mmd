@@ -1,0 +1,12 @@
+flowchart LR
+    A[Full page of sheet music] --> B[Deskew whole page]
+    B --> C[Staff line detection]
+    C --> D[Segment measures and symbols]
+    D --> E[Classify each symbol:<br/>pitch + duration]
+    E --> F[Assemble multi-note,<br/>multi-measure MusicXML]
+
+    classDef done fill:#c8e6c9,stroke:#2e7d32,color:#000
+    classDef partial fill:#fff9c4,stroke:#f9a825,color:#000
+    classDef todo fill:#ffcdd2,stroke:#c62828,color:#000
+    class E,F partial
+    class A,B,C,D todo

@@ -1,0 +1,21 @@
+flowchart TB
+    DATA[("data/single_note/<br/>train/ and val/<br/>PITCH/DURATION/*.png<br/>mostly 'whole' notes")]
+    GEN["generate_half_notes.py<br/>OpenCV: erase solid notehead,<br/>draw open ellipse"]
+    DATA --> GEN
+    GEN -->|"synthetic PITCH/half/*.png<br/>(only A5 has any so far)"| DATA
+
+    DATA --> LOAD["single_note_cnn.py<br/>list_dataset_pitch_duration()"]
+    LOAD --> PRE2["same preprocess as server<br/>+ augment: flip, brightness, contrast"]
+    PRE2 --> NET["Compact CNN<br/>4x Conv + BatchNorm + MaxPool<br/>Dense 256 + Dropout 0.4"]
+    NET --> H1[pitch head, softmax]
+    NET --> H2[duration head, softmax]
+    H1 & H2 --> EVAL["sklearn classification report<br/>+ confusion matrices"]
+    NET --> OUT[("runs/NAME/best.keras<br/>runs/NAME/labels.json")]
+    OUT -.->|"copied/pointed to by"| SRV[omr_server.py]
+
+    subgraph EXP["Experiments, not wired in"]
+        DS["Deskewing/<br/>deskew_starter.py, deskew_any_angle.py<br/>Hough / minAreaRect / projection sweep"]
+        M21["Learning/UsingMusic21.py<br/>+ WholeNote.musicxml<br/>+ DecipheringXML.txt (XML notes)"]
+    end
+    DS -.->|"planned: full-page deskew"| SRV
+    M21 -.->|"reference for MusicXML structure"| SRV

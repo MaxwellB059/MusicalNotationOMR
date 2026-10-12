@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python virtual environment (created by launch scripts)
+.venv
+__pycache__/
+*.pyc
