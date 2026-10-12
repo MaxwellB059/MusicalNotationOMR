@@ -51,12 +51,12 @@ def list_dataset_pitch_duration(root_dir):
 
     pitch_classes = [d.name for d in pitch_dirs]
 
-    # assume all pitches share the same duration folder names
-    sample_dur_root = pitch_dirs[0]
-    duration_dirs = sorted([d for d in sample_dur_root.iterdir() if d.is_dir()])
-    if not duration_dirs:
-        raise RuntimeError(f"No duration folders found inside {sample_dur_root}")
-    duration_classes = [d.name for d in duration_dirs]
+    # Union of duration folder names across ALL pitches: not every pitch has every
+    # duration (e.g. only A5 has 'half'), so reading just the first pitch dir would
+    # silently drop those images.
+    duration_classes = sorted({d.name for p in pitch_dirs for d in p.iterdir() if d.is_dir()})
+    if not duration_classes:
+        raise RuntimeError(f"No duration folders found inside any pitch folder of {root_dir}")
 
     paths = []
     pitch_labels = []
