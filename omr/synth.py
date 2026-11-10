@@ -9,6 +9,8 @@ import os
 import random
 import shutil
 import subprocess
+import tempfile
+import time
 from pathlib import Path
 
 from music21 import clef as m21clef, key as m21key, meter, note, stream
@@ -102,17 +104,35 @@ def to_lilypond(events, meta):
 
 def render_png(ly_text, out_stem, dpi=150):
     out_stem = Path(out_stem)
-    ly = out_stem.with_suffix(".ly")
-    ly.write_text(ly_text, encoding="utf-8")
-    proc = subprocess.run([LILYPOND, "--png", "-dresolution=%d" % dpi, "-dno-point-and-click",
-                           "-dcrop", "-o", str(out_stem), str(ly)], capture_output=True, text=True)
-    png = out_stem.with_suffix(".png")
-    cropped = out_stem.parent / (out_stem.name + ".cropped.png")
-    if cropped.exists():
-        cropped.replace(png)
-    if not png.exists():
-        raise RuntimeError("lilypond failed: " + proc.stderr[-800:])
+    # Render in a private temp dir, then copy results in: cloud-synced folders (Dropbox) lock
+    # files mid-write, which broke in-place rename. LilyPond also exits non-zero on some
+    # Windows setups even when the PNG is fine, so success = "PNG exists", not exit code.
+    with tempfile.TemporaryDirectory() as tmp:
+        ly = Path(tmp) / "s.ly"
+        ly.write_text(ly_text, encoding="utf-8")
+        proc = subprocess.run([LILYPOND, "--png", "-dresolution=%d" % dpi, "-dno-point-and-click",
+                               "-dcrop", "-o", str(Path(tmp) / "s"), str(ly)],
+                              capture_output=True, text=True)
+        produced = Path(tmp) / "s.cropped.png"
+        if not produced.exists():
+            produced = Path(tmp) / "s.png"
+        if not produced.exists():
+            raise RuntimeError("lilypond failed: " + proc.stderr[-800:])
+        png = out_stem.with_suffix(".png")
+        _copy_retry(produced, png)
+        _copy_retry(ly, out_stem.with_suffix(".ly"))
     return png
+
+
+def _copy_retry(src, dst, tries=20):
+    for i in range(tries):
+        try:
+            shutil.copyfile(src, dst)
+            return
+        except PermissionError:
+            if i == tries - 1:
+                raise
+            time.sleep(0.25)
 
 
 def generate(n, seed, out_dir, measures=2):
