@@ -1,0 +1,13 @@
+# Dev/test tooling (CPU only). Training envs are separate: see TRAINING_RUNBOOK.md.
+numpy<2
+opencv-python
+pillow
+music21
+pytest
+mongomock
+httpx
+fastapi
+python-multipart
+# LilyPond (renderer for synthetic data) is a system binary, not a pip package:
+#   Windows portable: unzip lilypond-2.24.4-mingw-x86_64.zip and set LILYPOND_BIN to bin/lilypond.exe
+#   Linux/CI: apt-get install lilypond

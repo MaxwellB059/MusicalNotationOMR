@@ -27,3 +27,8 @@ dist-ssr
 .venv
 __pycache__/
 *.pyc
+
+# Generated synthetic data and local artifacts
+data/synth/
+data/smoke/
+*.cropped.png
