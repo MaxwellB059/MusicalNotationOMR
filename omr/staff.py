@@ -104,3 +104,19 @@ def crop_staff(img, staff, pad_spaces=4):
     """Crop one staff with `pad_spaces` staff spaces of room above and below (for ledger lines)."""
     pad = int(round(pad_spaces * staff.space))
     return img[max(int(staff.top) - pad, 0):int(staff.bottom) + pad + 1]
+
+
+def normalize_scale(bw, target_space=20.0):
+    """Resize so the staff space is ~target_space px (all geometry is then zoom-independent).
+
+    Returns (resized_bw, scale). Uses the first detected staff; unchanged (scale 1.0) if none.
+    """
+    st = detect_staves(bw)
+    if not st:
+        return bw, 1.0
+    scale = target_space / st[0].space
+    if abs(scale - 1.0) < 0.05:
+        return bw, 1.0
+    h, w = bw.shape
+    out = cv2.resize(bw, (int(round(w * scale)), int(round(h * scale))), interpolation=cv2.INTER_CUBIC)
+    return ((out > 127).astype(np.uint8) * 255), scale
