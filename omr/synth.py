@@ -145,10 +145,19 @@ def generate(n, seed, out_dir, measures=2):
         clef = list(CLEFS)[rng.randrange(3)]
         events, meta = make_score(sid, measures, clef)
         stem = out / f"score_{sid}"
-        to_musicxml(events, meta, stem.with_suffix(".musicxml"))
-        render_png(to_lilypond(events, meta), stem)
-        (stem.with_suffix(".json")).write_text(json.dumps({"meta": meta, "events": events}))
         items.append(stem.name)
+        if stem.with_suffix(".json").exists():   # resumable: json is written last
+            continue
+        to_musicxml(events, meta, stem.with_suffix(".musicxml"))
+        for attempt in range(3):                 # LilyPond occasionally fails transiently
+            try:
+                render_png(to_lilypond(events, meta), stem)
+                break
+            except RuntimeError:
+                if attempt == 2:
+                    raise
+                time.sleep(1)
+        (stem.with_suffix(".json")).write_text(json.dumps({"meta": meta, "events": events}))
     return items
 
 
