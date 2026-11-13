@@ -1,0 +1,10 @@
+# Production API image (Railway). No training or test tooling.
+fastapi
+uvicorn[standard]
+python-multipart
+pymongo
+numpy<2
+opencv-python-headless
+# TODO(S8a): replace with onnxruntime once the symbol CNN is exported (tools/export_onnx.py);
+# tensorflow-cpu is the smaller TF wheel but still large. Keras 2.15 is required by the checked-in models.
+tensorflow-cpu==2.15.*

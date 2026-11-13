@@ -5,6 +5,8 @@ pillow
 music21
 pytest
 mongomock
+pymongo
+pyyaml
 httpx
 fastapi
 python-multipart

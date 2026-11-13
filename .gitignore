@@ -34,3 +34,6 @@ data/smoke/
 *.cropped.png
 data/symbols*.npz
 runs/symbols_smoke/
+.env
+.env.*
+!.env.example

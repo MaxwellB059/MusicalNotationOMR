@@ -19,3 +19,18 @@ jobs:
         run: "! git grep -nE 'mongodb(\\+srv)?://[^ ]*:[^ ]*@' -- . ':!PLAN.md' ':!TRAINING_RUNBOOK.md'"
       - name: Unit tests
         run: pytest tests/unit -q
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image and check size budget (< 2.5 GB until ONNX replaces TensorFlow)
+        run: |
+          docker build -t secundo-api .
+          size=$(docker image inspect secundo-api --format '{{.Size}}')
+          echo "image bytes: $size"
+          test "$size" -lt 2684354560
+      - name: Container starts and /health answers
+        run: |
+          docker run -d --name api -p 8000:8000 secundo-api
+          for i in $(seq 1 60); do curl -fs localhost:8000/health && exit 0; sleep 2; done
+          docker logs api; exit 1

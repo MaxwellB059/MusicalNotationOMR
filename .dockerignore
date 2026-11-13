@@ -1,0 +1,11 @@
+node_modules
+.venv
+.venv-dev
+data
+docs
+dist
+*.docx
+*.pptx
+diagrams
+Deskewing
+Learning

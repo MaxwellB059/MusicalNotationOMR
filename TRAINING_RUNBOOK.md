@@ -2,7 +2,7 @@
 
 Goal: train the Secundo models and report gate metrics. Read `PLAN.md` first (steps S4 symbol CNN, S6 marks detector). Work autonomously; stop and ask the human only under "Stop and ask".
 
-> Status: **template.** Commands marked `(pending)` depend on code that the build agents add (`omr/synth.py`, `omr/score.py`, `configs/`, `--smoke`). Do not run a pending command until its file exists; check `git log` / `ls omr configs` first.
+> Status: symbol-CNN training is **ready** (`omr/symbols.py`, `omr/train_symbols.py`, `configs/symbols.yaml`, `--smoke` verified on CPU). YOLO marks training, DeepScoresV2 conversion and `tools/export_onnx.py` runs are still `(pending)`: check `ls omr tools configs` before running a pending command.
 
 ## 0. Preconditions
 ```bash
@@ -30,21 +30,23 @@ LilyPond is required for data generation: install it (`apt install lilypond` / c
 ```bash
 pytest tests/unit -q
 python -m omr.synth --n 20 --seed 0 --out data/smoke
-python -m omr.train_symbols --config configs/symbols.yaml --smoke
-python -m omr.train_marks   --config configs/marks.yaml   --smoke
+python -m omr.train_symbols --config configs/symbols.yaml --smoke    # verified; prints GATE lines, expect FAIL at 2 epochs
+python -m omr.train_marks   --config configs/marks.yaml   --smoke    # (pending)
 ```
 All must pass before spending GPU time.
 
-## 3. Data  (pending)
+## 3. Data
 ```bash
-python -m omr.synth --n 5000 --seed 1 --out data/synth      # split is BY SCORE; script asserts zero image-hash overlap
+python -m omr.symbols --pages 2500 --seed 1 --out data/symbols.npz   # symbol crops, split BY PAGE, deduped vs train (~1 h, LilyPond)
+python -m omr.synth --n 5000 --seed 1 --out data/synth      # full lines for end-to-end scoring
 python tools/fetch_deepscores_dense.py --out data/deepscores # then tools/deepscores_to_yolo.py ; check sizes before download
 ```
 
-## 4. Train  (pending)
+## 4. Train
 ```bash
 # .venv-tf
-python -m omr.train_symbols --config configs/symbols.yaml     # -> runs/symbols/best.keras + labels.json + metrics.json
+python -m omr.train_symbols --config configs/symbols.yaml     # -> runs/symbols/best.keras + labels.json + metrics.json + confusion.csv; prints 3 GATE lines
+python tools/export_onnx.py --model runs/symbols/best.keras --out runs/symbols/best.onnx   # needs: pip install tf2onnx onnxruntime; checks parity
 # .venv-yolo
 python -m omr.train_marks --config configs/marks.yaml         # -> runs/marks/best.pt, best.onnx, metrics.json
 ```

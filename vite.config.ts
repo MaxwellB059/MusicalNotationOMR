@@ -5,7 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: "/Secundo-v-1.0/", // 👈 Important: your GitHub repo name here
+  base: process.env.VITE_BASE ?? "/Secundo-v-1.0/", // set VITE_BASE=/ on Railway; default keeps GitHub Pages path
   build: {
     outDir: "dist", // 👈 the folder GitHub Pages will publish
   },
