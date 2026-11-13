@@ -48,6 +48,10 @@ def find_noteheads(bw, staff, min_cover=0.55):
     lo, hi = int(staff.top - 5 * d), int(staff.bottom + 5 * d)
     band = np.zeros_like(heads)
     band[max(lo, 0):hi] = heads[max(lo, 0):hi]
+    # the clef is the leftmost tall component: noteheads can't be inside it (its lobes look like heads)
+    nc, _, cst, _ = cv2.connectedComponentsWithStats(cleaned)
+    tall = [cst[i] for i in range(1, nc) if cst[i][3] >= 5.5 * d and cst[i][2] >= 2.0 * d and cst[i][0] <= 4 * d]
+    clef_x1 = min(tall, key=lambda c: c[0])[0] + min(tall, key=lambda c: c[0])[2] if tall else -1
     n, _, stats, cent = cv2.connectedComponentsWithStats(band)
     out = []
     for i in range(1, n):
@@ -57,6 +61,8 @@ def find_noteheads(bw, staff, min_cover=0.55):
         if area < min_cover * (np.pi / 4) * w * h:       # must be roughly elliptical
             continue
         cx, cy = cent[i]
+        if cx < clef_x1:
+            continue
         out.append({"x": float(cx), "y": float(cy),
                     "position": semantics.y_to_position(cy, staff)})
     return sorted(out, key=lambda n: n["x"])
