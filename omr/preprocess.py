@@ -81,12 +81,32 @@ def crop_margins(bw, pad=12):
     return bw[max(y0 - pad, 0):y1 + pad + 1, max(x0 - pad, 0):x1 + pad + 1]
 
 
-def preprocess(img_bgr):
-    """Full S1: returns (bw_straight_cropped, info). `info['skew_deg']` is the correction applied."""
+TARGET_SPACE = 20.0   # every downstream stage sees staff spaces of ~20 px
+
+
+def preprocess(img_bgr, target_space=TARGET_SPACE):
+    """Full S1: returns (bw_straight_scaled_cropped, info).
+
+    Order matters: rotate and rescale the GRAYSCALE image, binarize last. Binarizing a small
+    image and then upscaling the binary one mangles noteheads.
+    info: skew_deg (correction applied), scale (resize factor), staff_space (px before scaling).
+    """
     gray = to_gray(img_bgr)
-    bw = binarize(gray)
-    angle = estimate_skew(bw)
-    bw = rotate_keep(bw, angle)
-    bw = (bw > 127).astype(np.uint8) * 255   # re-binarize after interpolation
+    angle = estimate_skew(binarize(gray))
+    gray = rotate_keep(gray, angle, fill=int(np.median(gray)))
+    scale = 1.0
+    from .staff import detect_staves   # local import: staff.py imports nothing from here
+    st = detect_staves(binarize(gray))
+    if st:
+        scale = target_space / st[0].space
+        if abs(scale - 1.0) > 0.05:
+            gray = cv2.resize(gray, None, fx=scale, fy=scale,
+                              interpolation=cv2.INTER_CUBIC if scale > 1 else cv2.INTER_AREA)
+        else:
+            scale = 1.0
+    d = target_space if st else 12.0
+    block = int(d * 6) | 1
+    bw = cv2.adaptiveThreshold(cv2.GaussianBlur(gray, (3, 3), 0), 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                               cv2.THRESH_BINARY_INV, block, 10)
     bw = crop_margins(bw)
-    return bw, {"skew_deg": angle}
+    return bw, {"skew_deg": angle, "scale": scale, "staff_space": st[0].space if st else None}

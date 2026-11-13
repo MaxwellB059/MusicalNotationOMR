@@ -18,7 +18,6 @@ pytestmark = pytest.mark.skipif(not HAVE_LILY, reason="LilyPond not installed")
 def run_one(path, truth_events, clef):
     img = cv2.imread(str(path))
     bw, _ = preprocess.preprocess(img)
-    bw, _ = staff.normalize_scale(bw)
     st = staff.detect_staves(bw)
     if len(st) != 1:
         return None
@@ -32,8 +31,9 @@ def run_one(path, truth_events, clef):
     return got, want
 
 
-@pytest.mark.xfail(reason="G3 NOT MET YET: first-pass notehead detector matches note counts on ~10/25 "
-                   "lines (clef curls, accidentals, beams, hollow heads confuse it). Track progress here; "
+@pytest.mark.xfail(reason="G3 NOT MET YET: first-pass morphological notehead detector matches note counts on ~15/30 "
+                   "lines, with 94% pitch accuracy on those (84/89); template matching was tried and was worse. "
+                   "Misses hollow heads and picks up flat bowls/clef lobes. Track progress here; "
                    "remove xfail when the gate passes.", strict=False)
 def test_pitch_geometry_on_generated_lines(tmp_path):
     import json

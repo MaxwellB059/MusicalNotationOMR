@@ -9,6 +9,9 @@ named properly by the symbol CNN in S4.
 import cv2
 import numpy as np
 
+HOLE_MIN, HOLE_MAX, DISC_R = 0.04, 1.6, 0.46
+SIZE = (0.7, 2.2, 0.6, 1.8)   # min/max blob width and height, in staff spaces   # tuned against synthetic lines (tests/unit)
+
 from . import semantics
 from .staff import remove_staff_lines
 
@@ -25,7 +28,7 @@ def _fill_hollow(bw, d):
     for i, c in enumerate(contours):
         if hier[0][i][3] != -1:                       # an inner contour = a hole
             area = cv2.contourArea(c)
-            if 0.2 * d * d < area < 1.6 * d * d:      # hole is notehead-sized, not a clef curl
+            if HOLE_MIN * d * d < area < HOLE_MAX * d * d:   # hole is notehead-sized, not a clef curl
                 cv2.drawContours(filled, [c], -1, 255, -1)
     return filled
 
@@ -38,7 +41,7 @@ def find_noteheads(bw, staff, min_cover=0.55):
     d = staff.space
     cleaned = remove_staff_lines(bw, [staff])
     solid = _fill_hollow(cleaned, d)
-    r = max(int(round(d * 0.42)), 2)
+    r = max(int(round(d * DISC_R)), 2)
     disc = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1, 2 * r + 1))
     heads = cv2.morphologyEx(solid, cv2.MORPH_OPEN, disc)
     # restrict to the staff band plus room for ledger lines
@@ -49,7 +52,7 @@ def find_noteheads(bw, staff, min_cover=0.55):
     out = []
     for i in range(1, n):
         x, y, w, h, area = stats[i]
-        if not (0.7 * d <= w <= 2.2 * d and 0.6 * d <= h <= 1.8 * d):
+        if not (SIZE[0] * d <= w <= SIZE[1] * d and SIZE[2] * d <= h <= SIZE[3] * d):
             continue                                     # too small/large: not a lone notehead
         if area < min_cover * (np.pi / 4) * w * h:       # must be roughly elliptical
             continue

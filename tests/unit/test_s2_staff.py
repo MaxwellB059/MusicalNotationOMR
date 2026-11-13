@@ -41,13 +41,13 @@ def test_two_staves_found_in_order():
 
 
 def test_gate_across_augmented_images():
-    """>=95% of rotated/blurred/noisy images: one staff, space within 5% after deskew."""
+    """>=95% of rotated/blurred/noisy images: one staff, space normalised to the 20 px target."""
     ok, total = 0, 30
     for i in range(total):
         deg, _ = augment.degrade(staff_image(seed=i), 500 + i, "medium", with_perspective=False)
         bw, _ = preprocess.preprocess(cv2.cvtColor(deg, cv2.COLOR_GRAY2BGR))
         st = staff.detect_staves(bw)
-        if len(st) == 1 and abs(st[0].space - 12) / 12 < 0.05:
+        if len(st) == 1 and abs(st[0].space - preprocess.TARGET_SPACE) / preprocess.TARGET_SPACE < 0.05:
             ok += 1
     assert ok / total >= 0.95, f"{ok}/{total}"
 
@@ -76,6 +76,6 @@ def test_real_lilypond_render_one_staff(tmp_path):
         bw, _ = preprocess.preprocess(img)
         st = staff.detect_staves(bw)
         assert len(st) == 1, stem
-        assert 8 <= st[0].space <= 14   # LilyPond at 150 dpi gives ~10 px
+        assert abs(st[0].space - preprocess.TARGET_SPACE) < 1.0   # preprocess normalises to 20 px
         diffs = np.diff(st[0].lines)
         assert diffs.max() - diffs.min() < 1.0
