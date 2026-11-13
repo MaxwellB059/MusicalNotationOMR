@@ -81,22 +81,39 @@ def detect_staves(bw, min_cover_frac=0.35):
 
 
 def remove_staff_lines(bw, staves, margin=1):
-    """Erase staff-line pixels but keep ink that continues above or below the line (stems, heads).
+    """Erase staff-line pixels but keep ink that is part of a taller vertical stroke (stems, heads).
 
-    A pixel on a line is erased only if the pixel `t` rows above AND below is empty (so the stroke
-    is just the thin line). Returns a new image; the input is untouched.
+    Column by column, the vertical ink run through the line band is measured. If the whole run is
+    no taller than the line itself (+ `margin` px each side) it is just line and is erased; a
+    taller run belongs to a symbol crossing the line and is kept. Run-length (rather than probing
+    a single pixel above/below) is what keeps thin hollow noteheads from being striped apart.
+    Returns a new image; the input is untouched.
     """
     out = bw.copy()
-    h = bw.shape[0]
+    h, w = bw.shape
     for st in staves:
-        t = int(round(st.thickness)) + margin
+        t = int(round(st.thickness))
+        limit = t + 2 * margin + 1                      # longest run that still counts as 'just a line'
+        reach = limit + 2
         for y in st.lines:
-            lo, hi = int(round(y - st.thickness / 2)) - margin, int(round(y + st.thickness / 2)) + margin
-            for row in range(max(lo, 0), min(hi, h - 1) + 1):
-                above = bw[max(row - t - 1, 0)]
-                below = bw[min(row + t + 1, h - 1)]
-                erase = (above == 0) & (below == 0)
-                out[row, erase] = 0
+            c = int(round(y))
+            lo, hi = max(c - reach, 0), min(c + reach, h - 1)
+            win = bw[lo:hi + 1] > 0                     # (rows, w) boolean window around this line
+            mid = c - lo
+            band = range(max(mid - t // 2 - margin, 0), min(mid + t // 2 + margin, win.shape[0] - 1) + 1)
+            for x in range(w):
+                col = win[:, x]
+                if not col[mid]:
+                    continue
+                top = mid
+                while top > 0 and col[top - 1]:
+                    top -= 1
+                bot = mid
+                while bot < len(col) - 1 and col[bot + 1]:
+                    bot += 1
+                if bot - top + 1 <= limit:
+                    for r in range(top, bot + 1):
+                        out[lo + r, x] = 0
     return out
 
 

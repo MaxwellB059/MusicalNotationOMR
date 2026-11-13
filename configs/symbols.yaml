@@ -1,0 +1,15 @@
+# Symbol CNN (PLAN.md S4). Real run: python -m omr.train_symbols --config configs/symbols.yaml
+seed: 1
+pages: 2500          # LilyPond pages (~1.5 s each); crops are split by PAGE
+aug_per_crop: 4
+epochs: 40
+batch_size: 128
+patience: 6
+data_path: data/symbols.npz
+out_dir: runs/symbols
+smoke:               # overrides applied by --smoke (CPU, ~2 min)
+  pages: 20
+  aug_per_crop: 2
+  epochs: 2
+  batch_size: 32
+  patience: 2

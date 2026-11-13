@@ -32,3 +32,5 @@ __pycache__/
 data/synth/
 data/smoke/
 *.cropped.png
+data/symbols*.npz
+runs/symbols_smoke/
