@@ -110,13 +110,17 @@ def render_png(ly_text, out_stem, dpi=150):
     with tempfile.TemporaryDirectory() as tmp:
         ly = Path(tmp) / "s.ly"
         ly.write_text(ly_text, encoding="utf-8")
-        proc = subprocess.run([LILYPOND, "--png", "-dresolution=%d" % dpi, "-dno-point-and-click",
-                               "-dcrop", "-o", str(Path(tmp) / "s"), str(ly)],
-                              capture_output=True, text=True)
-        produced = Path(tmp) / "s.cropped.png"
-        if not produced.exists():
-            produced = Path(tmp) / "s.png"
-        if not produced.exists():
+        for attempt in range(4):          # LilyPond fails transiently now and then (empty stderr)
+            proc = subprocess.run([LILYPOND, "--png", "-dresolution=%d" % dpi, "-dno-point-and-click",
+                                   "-dcrop", "-o", str(Path(tmp) / "s"), str(ly)],
+                                  capture_output=True, text=True, timeout=120)
+            produced = Path(tmp) / "s.cropped.png"
+            if not produced.exists():
+                produced = Path(tmp) / "s.png"
+            if produced.exists():
+                break
+            time.sleep(1 + attempt)
+        else:
             raise RuntimeError("lilypond failed: " + proc.stderr[-800:])
         png = out_stem.with_suffix(".png")
         _copy_retry(produced, png)

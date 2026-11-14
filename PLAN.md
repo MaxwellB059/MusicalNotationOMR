@@ -115,3 +115,20 @@ We do NOT train here. We deliver everything ready-to-run, committed and pushed s
 
 ## Verification of this plan's execution
 Run order for each step: `pytest tests/unit/<step>` -> `pytest tests/integration` -> `python -m omr.score --set <name>` prints the gate table; CI blocks merge if gate fails. End-to-end smoke: `launch.bat`, upload a generated line, confirm MusicXML opens in MuseScore.
+
+## Build status (updated 2026-11-13, branch `dev`)
+| Step | State | Evidence |
+|---|---|---|
+| S0 generator/scorer/split | Done except homr rerun, symbol boxes, `omr_common` move | 1,000 scores, leak check passes, scorer 1.0 on truth |
+| S1 preprocess | Gate met | skew <=0.5 deg on >=95% at mild/medium/hard |
+| S2 staff | Gate met | lines within 0.1 space, real LilyPond renders pass |
+| S3 pitch | Tables done (match music21). **Notehead gate NOT met**: 19/30 lines match note count, 95% pitch on those | xfail test tracks it |
+| S4 symbol CNN | Training-ready (`--smoke` verified); not trained | interim random forest: 95% on held-out pages, 20 classes |
+| S5 header | Not built (clef works: 100%; key 25%, time inferred from measure length) | |
+| S6 marks | Classical hairpin/tie detectors work on small clean samples (3/3, 3/3, 4/4). Dynamics, accents, YOLO not built | |
+| S7 assembly | Built. **First end-to-end numbers (20 lines): note F1 0.57, pitch 0.35, duration 0.49, clef 1.0, key 0.25** | far from a usable gate |
+| S8a deploy/data | API, Mongo layer, Dockerfile, Railway config built; Docker build unverified (daemon was off), live Atlas check needs credentials | |
+| S9 attach / S11 playback | Rules and exact MIDI done and tested | |
+| S10, S12 | Not started | |
+
+Biggest known errors: hollow (half/whole) noteheads broken by staff-line removal, key signature reading, beam-count estimate, accidentals merging with noteheads. The CNN (S4) trained on the GPU machine should replace the interim forest; re-run `pytest tests/unit/test_s7_assembly.py -s -k end_to_end` for new numbers.

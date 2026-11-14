@@ -71,6 +71,24 @@ def recognize_line(img_bgr, classify=None):
             pending_acc = None
         elif lab in ("sharp", "flat", "natural"):
             pending_acc = lab
+        elif lab == "beamed_group":
+            hs = sorted([h for h in _heads_in(c, heads, d) if id(h) not in used], key=lambda h: h["x"])
+            if len(hs) < 2:
+                flags.append(f"beamed group at x={c[0]} has {len(hs)} noteheads; skipped")
+                continue
+            # beams: count ink bands in the column band between the first two stems
+            x0 = int(hs[0]["x"] - c[0] + 0.7 * d)
+            x1 = int(hs[1]["x"] - c[0] - 0.7 * d)
+            col = c[4][:, max(x0, 0):max(x1, x0 + 1)]
+            profile = (col.sum(axis=1) > 0.6 * 255 * max(col.shape[1], 1)).astype(int)
+            bands = int(((np.diff(np.concatenate([[0], profile])) == 1)).sum()) if profile.any() else 1
+            dur = "16th" if bands >= 2 else "eighth"
+            flags.append(f"beamed group at x={c[0]}: {len(hs)} notes read as {dur} ({bands} beam band(s))")
+            for h in hs:
+                used.add(id(h))
+                name, _ = state.resolve(h["position"], pending_acc)
+                pending_acc = None
+                cur.append({"type": "note", "pitch": name, "dur": dur})
         elif lab.startswith("rest_"):
             cur.append({"type": "rest", "dur": lab[5:]})
         elif lab.startswith("note_"):

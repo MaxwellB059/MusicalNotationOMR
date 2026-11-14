@@ -19,7 +19,8 @@ from . import preprocess, staff, synth
 
 NOTE_TYPES = ["whole", "half", "quarter", "eighth", "16th"]
 CLASSES = ([f"note_{d}" for d in NOTE_TYPES] + [f"rest_{d}" for d in NOTE_TYPES] +
-           ["sharp", "flat", "natural", "clef_treble", "clef_bass", "clef_alto", "barline", "unknown"])
+           ["sharp", "flat", "natural", "clef_treble", "clef_bass", "clef_alto", "barline",
+            "beamed_group", "timesig", "unknown"])
 IMG = 64
 BS = chr(92)  # backslash, built explicitly so templates can't be mangled by escapes
 UNITS = {"whole": 16, "half": 8, "quarter": 4, "eighth": 2, "16th": 1}   # in 16th notes
@@ -58,8 +59,14 @@ def make_cells(rng, clef):
     tail = ly[1:]
     cells.append((f"{base}is{tail}4{_fill(4)}", ["sharp", "note_quarter"]))
     cells.append((f"{base}es{tail}4{_fill(4)}", ["flat", "note_quarter"]))
-    cells.append((f"{base}is{tail}4 {base}{tail}4 {_fill(8)}".replace("  ", " "),
-                  ["sharp", "note_quarter", "natural", "note_quarter"]))
+    # a natural sign appears when a note cancels an accidental earlier in the same measure
+    cells.append((f"{base}{tail}4 {base}is{tail}4 {base}{tail}4 {_fill(12)}".replace("  ", " "),
+                  ["note_quarter", "sharp", "note_quarter", "natural", "note_quarter"]))
+    # beamed groups: the beam joins several notes into ONE connected component
+    _, l1 = rand_pitch()
+    _, l2 = rand_pitch()
+    cells.append((f"{l1}8 {l2}8{_fill(4)}", ["beamed_group"]))
+    cells.append((f"{l1}16 {l2}16 {l1}16 {l2}16{_fill(4)}", ["beamed_group"]))
     return cells
 
 
@@ -69,7 +76,7 @@ def page_ly(cells, clef):
     return (f'{BS}version "2.24.4"\n'
             f'{BS}paper {{ indent = 0{BS}mm line-width = 400{BS}mm tagline = ##f '
             f'page-breaking = #ly:one-line-breaking }}\n'
-            f'{BS}score {{ {BS}new Staff {{ {BS}clef {cl} {BS}omit Staff.TimeSignature '
+            f'{BS}score {{ {BS}new Staff {{ {BS}clef {cl} '
             f'{BS}time 4/4 {body} {BS}bar "" }} {BS}layout {{}} }}\n')
 
 
@@ -195,6 +202,16 @@ def augment_mask(mask, rng, strength=1.0):
     return out[ys.min():ys.max() + 1, xs.min():xs.max() + 1] if len(xs) else mask
 
 
+def _union(comps):
+    """Merge several components into one (bounding box union, masks OR-ed)."""
+    x0 = min(c[0] for c in comps); y0 = min(c[1] for c in comps)
+    x1 = max(c[0] + c[2] for c in comps); y1 = max(c[1] + c[3] for c in comps)
+    mask = np.zeros((y1 - y0, x1 - x0), np.uint8)
+    for c in comps:
+        mask[c[1] - y0:c[1] - y0 + c[3], c[0] - x0:c[0] - x0 + c[2]] |= c[4]
+    return (x0, y0, x1 - x0, y1 - y0, mask)
+
+
 def render_page(page_seed, workdir):
     """Render one labelled page. Returns list of (label, mask) crops (anomalous pages are skipped)."""
     rng = random.Random(page_seed)
@@ -210,6 +227,9 @@ def render_page(page_seed, workdir):
     d = sts[0].space
     comps = comps[1:]                                   # first component is the clef
     out, i = [], 0
+    if comps and not is_barline(comps[0], d):           # next is the (merged) time-signature digits
+        out.append(("timesig", comps[0][4]))
+        comps = comps[1:]
     for ly, labels in cells:
         # components of this cell are everything up to (and consuming) the next barline
         got = []
@@ -218,6 +238,8 @@ def render_page(page_seed, workdir):
             i += 1
         bar = comps[i] if i < len(comps) else None
         i += 1
+        if len(labels) == 1 and len(got) > 1 and bar is not None:
+            got = [_union(got)]                         # one symbol cut in pieces by line removal
         if len(got) != len(labels) or bar is None:
             continue                                    # segmentation mismatch: skip, never mislabel
         out += [(lab, c[4]) for lab, c in zip(labels, got)]
