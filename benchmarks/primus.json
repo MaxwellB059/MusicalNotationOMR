@@ -1,0 +1,46 @@
+{
+ "n": 30,
+ "skipped_unsupported": 15,
+ "aggregate": {
+  "clean": {
+   "note_precision": 0.3575100915787191,
+   "note_recall": 0.23697112527994876,
+   "note_f1": 0.26947405999147894,
+   "pitch_acc": 0.11804819907761085,
+   "duration_acc": 0.34584800548035843,
+   "rest_recall": 0.5222222222222223,
+   "clef_ok": 0.4666666666666667,
+   "key_ok": 0.16666666666666666,
+   "time_ok": 0.13333333333333333,
+   "exact": 0.0
+  },
+  "camera": {
+   "note_precision": 0.16997049247049248,
+   "note_recall": 0.0693748571689748,
+   "note_f1": 0.08708097332372207,
+   "pitch_acc": 0.041512496218378575,
+   "duration_acc": 0.13464214978920863,
+   "rest_recall": 0.4111111111111111,
+   "clef_ok": 0.36666666666666664,
+   "key_ok": 0.06666666666666667,
+   "time_ok": 0.03333333333333333,
+   "exact": 0.0
+  }
+ },
+ "errors": {
+  "clean": [
+   "201004045-1_4_1: ValueError: No notes or rests found"
+  ],
+  "camera": [
+   "000105865-1_1_1: ValueError: No notes or rests found",
+   "000106700-1_1_1: ValueError: No staff found in image",
+   "000126818-1_1_1: ValueError: No notes or rests found",
+   "000128061-1_1_1: ValueError: No notes or rests found",
+   "212001679-1_2_1: ValueError: No notes or rests found"
+  ]
+ },
+ "error_counts": {
+  "clean": 1,
+  "camera": 5
+ }
+}

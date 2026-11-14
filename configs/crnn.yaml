@@ -1,0 +1,14 @@
+# Real-image CRNN (CTC) on Camera-PrIMuS. Run: python -m omr.train_crnn --config configs/crnn.yaml
+seed: 1
+data_root: ~/datasets/camera_primus/Corpus   # see TRAINING_RUNBOOK.md for the download
+epochs: 40
+batch_size: 16
+patience: 6
+out_dir: runs/crnn
+eval_limit: 500
+smoke:
+  limit: 60
+  epochs: 1
+  batch_size: 4
+  patience: 1
+  eval_limit: 8

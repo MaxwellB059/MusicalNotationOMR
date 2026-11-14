@@ -37,3 +37,5 @@ runs/symbols_smoke/
 .env
 .env.*
 !.env.example
+runs/crnn_smoke/
+runs/crnn/

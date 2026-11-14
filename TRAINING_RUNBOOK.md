@@ -52,6 +52,25 @@ python -m omr.train_marks --config configs/marks.yaml         # -> runs/marks/be
 ```
 Training is resumable (`--resume`). Seeds are fixed in the configs.
 
+
+## 4b. Real-image CRNN (the model that reads real photos/scans)  -- READY, smoke verified
+This is the main path to classifying real images: a CNN + BiLSTM + CTC model that reads a whole line and
+outputs tokens (clef, key, time, notes, rests, ties, barlines). It trains on Camera-PrIMuS (87,678 real
+incipits; clean print AND camera-distorted photos; ~66% usable after dropping tuplets, grace notes,
+fermatas and multirests).
+```bash
+# download once (2.4 GB; academic dataset, licence not stated on the page: fine for a course project, check before any public release)
+mkdir -p ~/datasets/camera_primus && cd ~/datasets
+curl -L -O https://grfia.dlsi.ua.es/primus/packages/CameraPrIMuS.tgz && tar -xzf CameraPrIMuS.tgz -C camera_primus
+cd <repo>
+python -m omr.train_crnn --config configs/crnn.yaml --smoke     # ~1 min CPU check
+python -m omr.train_crnn --config configs/crnn.yaml             # real run; prints 2 GATE lines
+```
+Outputs `runs/crnn/best.keras`, `vocab.json`, `metrics.json` (token error rate and sequence accuracy on
+camera and clean images, plus clef/key/time accuracy). Gates: camera token error rate <= 0.15,
+camera whole-line accuracy >= 0.5. Commit `vocab.json`, `metrics.json` and the model if < 50 MB.
+Split is by piece (no incipit of a training piece appears in test).
+
 ## 5. Evaluate against gates
 ```bash
 python -m omr.score --set synth_test --model runs/symbols      # prints gate table (PLAN.md S4)

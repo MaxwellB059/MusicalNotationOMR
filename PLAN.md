@@ -132,3 +132,6 @@ Run order for each step: `pytest tests/unit/<step>` -> `pytest tests/integration
 | S10, S12 | Not started | |
 
 Biggest known errors: hollow (half/whole) noteheads broken by staff-line removal, key signature reading, beam-count estimate, accidentals merging with noteheads. The CNN (S4) trained on the GPU machine should replace the interim forest; re-run `pytest tests/unit/test_s7_assembly.py -s -k end_to_end` for new numbers.
+
+### Real images (added 2026-11-13)
+Our hand-built pipeline scores note F1 0.27 on clean and 0.09 on camera-distorted real incipits (Camera-PrIMuS, 30 samples, `tools/eval_primus.py`), so it cannot read real images yet: dots, hollow heads and 2000 px-wide scans break it. The path to real images is the CRNN+CTC model (`omr/crnn.py`, `omr/train_crnn.py`, `omr/tokens.py`), trained on Camera-PrIMuS on the GPU machine (runbook section 4b). The geometry pipeline stays as the explainable path and the benchmark baseline.

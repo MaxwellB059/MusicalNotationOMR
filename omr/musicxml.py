@@ -6,8 +6,8 @@ supports ties, articulations, dynamics and hairpins so S9 can attach marks witho
 from xml.dom import minidom
 from xml.etree.ElementTree import Element, SubElement, tostring
 
-DIVISIONS = 4  # per quarter note, so a 16th = 1
-DUR = {"whole": 16, "half": 8, "quarter": 4, "eighth": 2, "16th": 1}
+DIVISIONS = 8  # per quarter note, so a dotted 16th (1.5 sixteenths) is a whole number of divisions
+DUR = {"whole": 16, "half": 8, "quarter": 4, "eighth": 2, "16th": 1, "32nd": 0.5}   # in 16th notes
 CLEF_XML = {"treble": ("G", 2), "bass": ("F", 4), "alto": ("C", 3), "tenor": ("C", 4)}
 
 
@@ -68,7 +68,7 @@ def build_musicxml(measures, clef="treble", fifths=0, beats=4, beat_type=4, flag
                     SubElement(p, "alter").text = str(alter)
                 SubElement(p, "octave").text = str(octave)
             units = DUR[e["dur"]] * (1.5 if e.get("dots") else 1)
-            SubElement(n, "duration").text = str(int(units))
+            SubElement(n, "duration").text = str(int(round(units * DIVISIONS / 4)))
             if e.get("tie_stop"):
                 SubElement(n, "tie", type="stop")
             if e.get("tie_start"):
