@@ -47,7 +47,7 @@ def test_end_to_end_line_scoring(tmp_path):
     """Measured, not gated yet: records the first honest end-to-end numbers (PLAN.md G7)."""
     from omr import assemble
     items = synth.generate(20, seed=31, out_dir=tmp_path)
-    rows, errors = [], 0
+    rows, errors, first = [], 0, None
     for stem in items:
         try:
             out = assemble.recognize_line(cv2.imread(str(tmp_path / (stem + ".png"))))
@@ -55,9 +55,10 @@ def test_end_to_end_line_scoring(tmp_path):
             rows.append(sc.score_files(tmp_path / (stem + ".pred.musicxml"), tmp_path / (stem + ".musicxml")))
         except Exception as exc:                       # a crash counts as a zero line, never hidden
             errors += 1
+            first = first or repr(exc)
             rows.append({k: 0.0 for k in sc.score(sc.extract(tmp_path / (stem + ".musicxml")),
                                                    sc.extract(tmp_path / (stem + ".musicxml")))})
     agg = sc.aggregate(rows)
     print("END-TO-END", json.dumps({k: round(v, 3) for k, v in agg.items()}), "crashes:", errors)
-    assert errors <= len(items) // 2, "pipeline crashes on more than half of the lines"
+    assert errors <= len(items) // 2, f"pipeline crashes on more than half of the lines; first error: {first}"
     assert agg["note_f1"] > 0.1                        # sanity floor only; real gate G7 set by the team

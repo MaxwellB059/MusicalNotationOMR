@@ -10,4 +10,4 @@ opencv-python
 tensorflow==2.15.*
 
 # Training only (single_note_cnn.py)
-scikit-learn
+scikit-learn==1.7.2
