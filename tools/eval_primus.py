@@ -15,7 +15,7 @@ from pathlib import Path
 import cv2
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from omr import assemble, primus, score as sc  # noqa: E402
+from omr import assemble, primus, recognize as R, score as sc  # noqa: E402
 
 
 def main():
@@ -24,7 +24,8 @@ def main():
     ap.add_argument("--n", type=int, default=40)
     ap.add_argument("--seed", type=int, default=5)
     ap.add_argument("--out", default="benchmarks/primus.json")
-    ap.add_argument("--classifier", default=None, help="unused placeholder for the CNN later")
+    ap.add_argument("--pipeline", choices=["auto", "geometry"], default="auto",
+                    help="auto = trained CRNN if runs/crnn exists, else geometry; geometry forces the hand-built pipeline")
     a = ap.parse_args()
 
     dirs = sorted(p for p in Path(a.root).iterdir() if p.is_dir())
@@ -49,8 +50,9 @@ def main():
             if path is None:
                 continue
             try:
-                out = assemble.recognize_line(cv2.imread(str(path)))
-                res[kind].append(sc.score(sc.extract(out["xml"]), truth))
+                img = cv2.imread(str(path))
+                xml = assemble.recognize_line(img)["xml"] if a.pipeline == "geometry" else R.recognize(img)
+                res[kind].append(sc.score(sc.extract(xml), truth))
             except Exception as exc:
                 errors[kind].append(f"{d.name}: {type(exc).__name__}: {exc}")
                 res[kind].append(dict(zero))

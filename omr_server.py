@@ -64,12 +64,21 @@ def predict_pitch_and_duration(x):
     )
 
 
-def recognize(img_bgr):
-    """Single-note pipeline (current behaviour). The line/page pipeline replaces this in S7/S10."""
+def recognize_single_note(img_bgr):
+    """Original single-note pipeline (kept as the last-resort fallback)."""
     x = preprocess_bgr_to_tensor(img_bgr, target=IMG_SIZE)
     x = np.expand_dims(x, axis=0)
     pitch_name, duration_type = predict_pitch_and_duration(x)
     return build_single_note_musicxml(pitch_name, duration_type=duration_type)
+
+
+def recognize(img_bgr):
+    """Trained line reader (CRNN) when its model is present; otherwise the original single-note model.
+    The geometry pipeline (omr.recognize) is available but only reads clean renders, so it is not the default."""
+    from omr import recognize as R
+    if R.crnn_available():
+        return R.recognize(img_bgr)
+    return recognize_single_note(img_bgr)
 
 
 # MONGODB_URI unset -> stateless (db is None). Set ALLOWED_ORIGINS for the deployed frontend URL.

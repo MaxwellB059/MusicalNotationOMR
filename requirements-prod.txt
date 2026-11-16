@@ -4,6 +4,7 @@ uvicorn[standard]
 python-multipart
 pymongo
 numpy<2
+onnxruntime   # serves the trained CRNN (runs/crnn/best.onnx, export with tools/export_onnx.py)
 opencv-python-headless
 # TODO(S8a): replace with onnxruntime once the symbol CNN is exported (tools/export_onnx.py);
 # tensorflow-cpu is the smaller TF wheel but still large. Keras 2.15 is required by the checked-in models.
